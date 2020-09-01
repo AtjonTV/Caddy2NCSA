@@ -1,9 +1,20 @@
 #!/usr/bin/env python3
 
-import json, sys, getopt
+import json, sys, getopt, tarfile, tempfile, os
 from datetime import datetime
 
-def get_log(filename):
+def get_log_tar(filename):
+    tmpFolder = tempfile.TemporaryDirectory()
+    log = ""
+    with tmpFolder as folder:
+        tar = tarfile.open(filename, "r")
+        tar.extractall(path=folder)
+        tar.close()
+
+        log = get_log_normal(os.path.join(folder, os.listdir(folder)[0]))
+    return log
+
+def get_log_normal(filename):
     file = open(filename, "r")
     jsonLog = "["
     lineNum = 1
@@ -18,8 +29,14 @@ def get_log(filename):
     jsonData = json.loads(jsonLog)
     return jsonData
 
-# Gets a 
-def get_element(elements, element, first=True):
+def get_log(filename):
+    if tarfile.is_tarfile(filename):
+        return get_log_tar(filename)
+    else:
+        return get_log_normal(filename)
+
+# Gets a element from a elements list or object, returns "" by default and returns the first item of element by default
+def get_element(elements, element, first=True, default=""):
     if not isinstance(elements, (list, object)):
         print("Cannot get element '{}' of non-list and non-object!".format(element))
         exit(1)
@@ -29,7 +46,7 @@ def get_element(elements, element, first=True):
             return elements[element][0]
         else:
             return elements[element]
-    return ""
+    return default
 
 def write_common_log(logs, filename):
     file = open(filename, "w")
@@ -63,9 +80,9 @@ def main(argv):
     inputFiles = []
     outputFile = ''
     try:
-        opts, args = getopt.getopt(argv,"hi:o:",["inputfile=","outputfile="])
+        opts, args = getopt.getopt(argv,"hi:o:d:",["inputfile=","outputfile=","inputdir="])
     except getopt.GetoptError:
-        print(sys.argv[0] + " -o <outputFile> [-i <inputFile>,..]")
+        print(sys.argv[0] + " -o <outputFile> [-i <inputFile>, -d <inputDir>,..]")
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
@@ -75,14 +92,19 @@ def main(argv):
             inputFiles.append(arg)
         elif opt in ("-o", "--outputfile"):
             outputFile = arg
+        elif opt in ("-d", "--inputdir"):
+            files = os.listdir(arg)
+            for file in files:
+                inputFiles.append(os.path.join(arg, file))
     print("Input Files: {}\nOutput File: {}".format(inputFiles, outputFile))
 
     fullLog = []
     for file in inputFiles:
-        fullLog.extend(get_log(file))
+        if file != outputFile:
+            fullLog.extend(get_log(file))
     write_common_log(fullLog, outputFile)
 
 if __name__ == "__main__":
     print("\tCaddy v2 JSON log to NCSA vHost log converter")
-    print("\tVersion 1.0; Copyright 2015-2020 (c) ATVG-Studios\n")
+    print("\tVersion 1.1.0; Copyright 2015-2020 (c) ATVG-Studios\n")
     main(sys.argv[1:])

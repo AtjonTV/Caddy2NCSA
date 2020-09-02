@@ -13,10 +13,16 @@ and this project adheres to [Semantic Versioning](semver.md).
 ### Fixed
 ### Security
 
+## [1.2.0] (2020-09-02)
+
+### Added
+* Support for gzip compressed files
+* Logging for information/debugging
+
 ## [1.1.0] (2020-09-01)
 
 ### Added
-* Support for tar, gz, bz2 and xz files
+* Support for tar, bz2 and xz files
 * Support to add a complete directory with -d
 
 ### Fixed

@@ -1,24 +1,60 @@
 #!/usr/bin/env python3
 
-import json, sys, getopt, tarfile, tempfile, os
+import json, sys, getopt, tarfile, tempfile, os, gzip
 from datetime import datetime
+
+version = "1.2.0"
 
 def get_log_tar(filename):
     tmpFolder = tempfile.TemporaryDirectory()
-    log = ""
+    logs = []
+    print("TAR: Using temporary folder '{}'".format(tmpFolder))
     with tmpFolder as folder:
+        print("TAR: Extracting '{}'".format(filename))
         tar = tarfile.open(filename, "r")
         tar.extractall(path=folder)
         tar.close()
 
-        log = get_log_normal(os.path.join(folder, os.listdir(folder)[0]))
-    return log
+        files = os.listdir(folder)
+        print("TAR: Got files: {}".format(files))
+        for file in files:
+            fileName = os.path.join(folder, file)
+            print("TAR: Opening File '{}'".format(fileName))
+            logs.extend(get_log_normal(fileName))
+    return logs
+
+
+def get_log_gzip(filename):
+    tmpFolder = tempfile.TemporaryDirectory()
+    print("GZIP: Reading Compressed '{}'".format(filename))
+    file = gzip.open(filename, "rb")
+    data = file.read()
+    file.close()
+
+    with tmpFolder as folder:
+        fileName = os.path.join(folder, "caddy.log")
+
+        print("GZIP: Writing Uncompressed '{}'".format(fileName))
+        file = open(fileName, "wb")
+        file.write(data)
+        file.close()
+
+        file = open(fileName, "r")
+
+        logs = get_log_file(file)
+    return logs
 
 def get_log_normal(filename):
+    print("LOG: Reading JSON '{}'".format(filename))
     file = open(filename, "r")
+    return get_log_file(file)
+
+def get_log_file(file):
+    file.seek(0)
     jsonLog = "["
     lineNum = 1
-    numLines = sum(1 for line in open(filename, "r"))
+    numLines = sum(1 for line in file)
+    file.seek(0)
     for line in file:
         jsonLog += line
         if lineNum < numLines:
@@ -32,6 +68,8 @@ def get_log_normal(filename):
 def get_log(filename):
     if tarfile.is_tarfile(filename):
         return get_log_tar(filename)
+    elif filename.endswith("gz"):
+        return get_log_gzip(filename)
     else:
         return get_log_normal(filename)
 
@@ -49,6 +87,7 @@ def get_element(elements, element, first=True, default=""):
     return default
 
 def write_common_log(logs, filename):
+    print("CLW: Writing NCSA log '{}'".format(filename))
     file = open(filename, "w")
     for log in logs:
         timestamp = get_element(log, "ts")
@@ -77,16 +116,20 @@ def write_common_log(logs, filename):
     file.close()
 
 def main(argv):
+    usageString = "{} -o <outputFile> [-i <inputFile>, -d <inputDir>,..]".format(sys.argv[0])
+
     inputFiles = []
     outputFile = ''
     try:
         opts, args = getopt.getopt(argv,"hi:o:d:",["inputfile=","outputfile=","inputdir="])
     except getopt.GetoptError:
-        print(sys.argv[0] + " -o <outputFile> [-i <inputFile>, -d <inputDir>,..]")
+        print(usageString)
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print(sys.argv[0] + " -o <outputFile> [-i <inputFile>,..]")
+            print(usageString)
+            print("\nAccepted Compressed files: GZIP, TAR, BZ2, LZMA")
+            print("Accepted Uncompressed files: Caddy 2 Structured Log")
             sys.exit()
         elif opt in ("-i", "--inputfile"):
             inputFiles.append(arg)
@@ -106,5 +149,5 @@ def main(argv):
 
 if __name__ == "__main__":
     print("\tCaddy v2 JSON log to NCSA vHost log converter")
-    print("\tVersion 1.1.0; Copyright 2015-2020 (c) ATVG-Studios\n")
+    print("\tVersion {}; Copyright 2015-2020 (c) ATVG-Studios\n".format(version))
     main(sys.argv[1:])

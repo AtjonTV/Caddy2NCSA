@@ -13,6 +13,14 @@ and this project adheres to [Semantic Versioning](semver.md).
 ### Fixed
 ### Security
 
+## [1.3.0] (2020-09-02)
+
+### Added
+* Use X-Forwarded-For header if available
+
+### Changed
+* Fix issue in get_element function
+
 ## [1.2.0] (2020-09-02)
 
 ### Added

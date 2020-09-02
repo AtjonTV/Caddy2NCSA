@@ -3,7 +3,7 @@
 import json, sys, getopt, tarfile, tempfile, os, gzip
 from datetime import datetime
 
-version = "1.2.0"
+version = "1.3.0"
 
 def get_log_tar(filename):
     tmpFolder = tempfile.TemporaryDirectory()
@@ -81,10 +81,11 @@ def get_element(elements, element, first=True, default=""):
         exit(1)
 
     if element in elements:
-        if isinstance(element, list) and first:
-            return elements[element][0]
+        value = elements[element]
+        if isinstance(value, list) and first:
+            return value[0]
         else:
-            return elements[element]
+            return value
     return default
 
 def write_common_log(logs, filename):
@@ -104,6 +105,11 @@ def write_common_log(logs, filename):
         headers = get_element(request, "headers")
         userAgent = get_element(headers, "User-Agent")
         referer = get_element(headers, "Referer")
+        realIp = get_element(headers, "X-Forwarded-For", default=None)
+
+        # This is required to resolve the real IP of the client behind Cloudflare/Proxies
+        if realIp != None:
+            remoteAddress = realIp
 
         tls = get_element(request, "tls")
         serverName = get_element(tls, "server_name")

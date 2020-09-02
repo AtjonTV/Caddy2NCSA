@@ -39,6 +39,7 @@ def get_log_gzip(filename):
         file.write(data)
         file.close()
 
+        print("LOG: Reading JSON '{}'".format(fileName))
         file = open(fileName, "r")
 
         logs = get_log_file(file)

@@ -10,4 +10,4 @@ I am by no means a Python scripter so expect this code the be bad and break at a
 
 As you can view the code right now, you probably guessed that the code has some open-source license.
 
-The code is licensed under the [OSPL20](/LICENSE) a MPLv2 un-modified clone.
+The code is licensed under the [MPL 2.0](/LICENSE).
